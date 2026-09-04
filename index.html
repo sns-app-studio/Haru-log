@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>るぅとの健康第一 🐹 手描き＆ログ</title>
+    <style>
+        :root { 
+            --primary: #FFD700; /* るぅとイエロー */
+            --primary-dark: #DAA520; 
+            --bg-yellow: #FFF9C4; 
+            --text-brown: #5D4037; 
+        }
+
+        body { 
+            font-family: 'Helvetica Neue', Arial, "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif; 
+            background: linear-gradient(135deg, var(--bg-yellow), var(--primary)); 
+            background-attachment: fixed;
+            margin: 0; padding: 10px; color: var(--text-brown); min-height: 100vh;
+        }
+
+        .app { width: 100%; max-width: 500px; margin: 0 auto; }
+        
+        .card { 
+            background: rgba(255, 255, 255, 0.95); border-radius: 24px; padding: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-bottom: 20px; 
+            border: 2px solid var(--primary);
+        }
+
+        h1 { 
+            font-size: 1.5rem; color: #fff; text-align: center; margin-bottom: 20px;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .date-selector { text-align: center; margin-bottom: 20px; }
+        .date-selector input, .date-selector select { 
+            padding: 10px; border-radius: 20px; border: 2px solid var(--primary);
+            font-size: 1.1rem; outline: none; color: var(--text-brown);
+            background: white;
+        }
+        .date-selector input { width: 80%; }
+
+        h2 { font-size: 1rem; border-left: 5px solid var(--primary); padding-left: 10px; margin: 20px 0 10px; }
+
+        /* 手描きエリア */
+        #canvas-container {
+            border: 2px dashed var(--primary);
+            border-radius: 15px;
+            background: white;
+            margin: 10px 0;
+            position: relative;
+            touch-action: none;
+        }
+        canvas { width: 100%; cursor: crosshair; border-radius: 15px; }
+        
+        .canvas-btns { display: flex; gap: 5px; margin-bottom: 15px; }
+        .canvas-btns button { 
+            flex: 1; padding: 8px; border: 1px solid var(--primary); 
+            background: white; color: var(--primary-dark); border-radius: 10px; cursor: pointer;
+            font-size: 0.8rem; font-weight: bold;
+        }
+
+        /* 入力エリア */
+        .input-label { font-size: 0.8rem; font-weight: bold; margin-top: 10px; display: block; }
+        input[type="text"], input[type="time"], textarea, select { 
+            width: 100%; padding: 12px; margin: 5px 0 15px; border: 2px solid #FFF9C4; 
+            border-radius: 12px; box-sizing: border-box; color: var(--text-brown);
+            font-size: 1rem; outline: none; transition: 0.3s;
+        }
+        input[type="text"]:focus, input[type="time"]:focus, textarea:focus { border-color: var(--primary); background: #fff; }
+
+        .time-group {
+            display: flex; gap: 10px;
+        }
+        .time-group > div { flex: 1; }
+
+        .save-btn { 
+            width: 100%; background: var(--primary); color: var(--text-brown); border: none; 
+            padding: 18px; border-radius: 50px; font-weight: bold; font-size: 1.2rem;
+            cursor: pointer; margin-top: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.1s;
+        }
+        .save-btn:active { transform: scale(0.98); }
+
+        /* 月別テーブル表示 */
+        .month-filter { text-align: center; margin-bottom: 15px; }
+        .history-table-container { overflow-x: auto; margin-top: 10px; }
+        table {
+            width: 100%; border-collapse: collapse; background: white; font-size: 0.85rem; border-radius: 10px; overflow: hidden;
+        }
+        th, td {
+            border: 1px solid #FFF9C4; padding: 8px; text-align: center; vertical-align: middle;
+        }
+        th { background-color: var(--bg-yellow); color: var(--text-brown); font-weight: bold; }
+        .history-img-thumb { width: 50px; height: auto; border-radius: 5px; border: 1px solid #ccc; }
+        .memo-cell { text-align: left; max-width: 100px; word-break: break-all; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <h1>🐹 るぅとの健康ログ 💛</h1>
+
+    <div class="card">
+        <div class="date-selector">
+            <input type="date" id="target-date" onchange="window.loadSelectedDateData()">
+        </div>
+
+        <h2>🎨 今日のらくがき</h2>
+        <div id="canvas-container">
+            <canvas id="doodle" width="400" height="200"></canvas>
+        </div>
+        <div class="canvas-btns">
+            <button onclick="window.clearCanvas()">描きなおす</button>
+        </div>
+
+        <h2>🌙 睡眠記録</h2>
+        <div class="time-group">
+            <div>
+                <span class="input-label">😴 就寝時間</span>
+                <input type="time" id="sleep-time" value="23:00">
+            </div>
+            <div>
+                <span class="input-label">☀️ 起床時間</span>
+                <input type="time" id="wake-time" value="07:00">
+            </div>
+        </div>
+
+        <h2>💬 自分で打ちこむ</h2>
+        <span class="input-label">✨ 今の気分は？</span>
+        <input type="text" id="mood" placeholder="例：最高！、ねむい...">
+
+        <span class="input-label">📝 僕へのメッセージ</span>
+        <textarea id="memo" rows="4" placeholder="今日あったことや、伝えたいことを自由に打ってくださいね。"></textarea>
+
+        <button class="save-btn" onclick="window.saveData()">💛 るぅとくんに報告する！</button>
+    </div>
+
+    <div class="card">
+        <h2>📊 僕との思い出（一覧表）</h2>
+        <div class="month-filter">
+            <span class="input-label" style="display:inline-block; margin-right:5px;">表示月:</span>
+            <select id="month-select" style="width: auto; display: inline-block; padding: 5px 15px;" onchange="window.showHistory()">
+            </select>
+        </div>
+        <div class="history-table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>日付</th>
+                        <th>絵</th>
+                        <th>気分</th>
+                        <th>就寝</th>
+                        <th>起床</th>
+                        <th>睡眠</th>
+                        <th>メッセージ</th>
+                    </tr>
+                </thead>
+                <tbody id="history-list"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBBN7W5O6qMzNv8ePrHiIOaQ1H44sJ6B00",
+  authDomain: "haru-log-a8978.firebaseapp.com",
+  projectId: "haru-log-a8978",
+  storageBucket: "haru-log-a8978.firebasestorage.app",
+  messagingSenderId: "830231215759",
+  appId: "1:830231215759:web:32746af9e8d04622c77afa",
+  measurementId: "G-YPMBD0KTNF"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const CANVAS = document.getElementById('doodle');
+    const CTX = CANVAS.getContext('2d');
+    let drawing = false;
+    let allLogs = {};
+
+    CTX.strokeStyle = "#FFD700";
+    CTX.lineWidth = 4;
+    CTX.lineCap = "round";
+
+    function getPos(e) {
+        const rect = CANVAS.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+            x: (clientX - rect.left) * (CANVAS.width / rect.width),
+            y: (clientY - rect.top) * (CANVAS.height / rect.height)
+        };
+    }
+
+    function start(e) { drawing = true; draw(e); }
+    function end() { drawing = false; CTX.beginPath(); }
+    function draw(e) {
+        if (!drawing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        CTX.lineTo(pos.x, pos.y);
+        CTX.stroke();
+        CTX.beginPath();
+        CTX.moveTo(pos.x, pos.y);
+    }
+
+    CANVAS.addEventListener('mousedown', start);
+    CANVAS.addEventListener('mousemove', draw);
+    window.addEventListener('mouseup', end);
+    CANVAS.addEventListener('touchstart', start, {passive: false});
+    CANVAS.addEventListener('touchmove', draw, {passive: false});
+    CANVAS.addEventListener('touchend', end);
+
+    window.clearCanvas = function() {
+        CTX.clearRect(0, 0, CANVAS.width, CANVAS.height);
+    };
+
+    function calculateSleepDuration(sleep, wake) {
+        if (!sleep || !wake) return '-';
+        const [sH, sM] = sleep.split(':').map(Number);
+        const [wH, wM] = wake.split(':').map(Number);
+
+        let sleepDate = new Date(2000, 0, 1, sH, sM);
+        let wakeDate = new Date(2000, 0, 1, wH, wM);
+
+        if (wakeDate <= sleepDate) {
+            wakeDate.setDate(wakeDate.getDate() + 1);
+        }
+
+        const diffMs = wakeDate - sleepDate;
+        const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMins = Math.round((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+        return `${diffHrs}時間${diffMins > 0 ? diffMins + '分' : ''}`;
+    }
+
+    window.saveData = function() {
+        const date = document.getElementById('target-date').value;
+        if(!date) { alert("日付を選んでくださいね！"); return; }
+
+        const sleepTime = document.getElementById('sleep-time').value;
+        const wakeTime = document.getElementById('wake-time').value;
+
+        const entry = {
+            date: date,
+            sleep: sleepTime,
+            wake: wakeTime,
+            sleepDuration: calculateSleepDuration(sleepTime, wakeTime),
+            mood: document.getElementById('mood').value,
+            memo: document.getElementById('memo').value,
+            image: CANVAS.toDataURL()
+        };
+
+        set(ref(db, 'root_health_logs/' + date), entry)
+            .then(() => {
+                alert('るぅと：受け取りました！今日も頑張っていてえらいです。ゆっくり休んでくださいね。🐹💛');
+            })
+            .catch((error) => {
+                alert('保存に失敗しました: ' + error.message);
+            });
+    };
+
+    window.loadSelectedDateData = function() {
+        const date = document.getElementById('target-date').value;
+        const entry = allLogs[date];
+
+        window.clearCanvas();
+        if (entry) {
+            document.getElementById('sleep-time').value = entry.sleep || "23:00";
+            document.getElementById('wake-time').value = entry.wake || "07:00";
+            document.getElementById('mood').value = entry.mood || "";
+            document.getElementById('memo').value = entry.memo || "";
+            
+            if (entry.image) {
+                const img = new Image();
+                img.onload = () => CTX.drawImage(img, 0, 0);
+                img.src = entry.image;
+            }
+        } else {
+            document.getElementById('sleep-time').value = "23:00";
+            document.getElementById('wake-time').value = "07:00";
+            document.getElementById('mood').value = "";
+            document.getElementById('memo').value = "";
+        }
+    };
+
+    function populateMonthSelect() {
+        const monthSelect = document.getElementById('month-select');
+        const currentSelected = monthSelect.value;
+        monthSelect.innerHTML = '';
+
+        const months = new Set();
+
+        Object.keys(allLogs).forEach(date => {
+            if (date) months.add(date.substring(0, 7));
+        });
+
+        const thisMonth = new Date().toISOString().substring(0, 7);
+        months.add(thisMonth);
+
+        const sortedMonths = Array.from(months).sort().reverse();
+
+        sortedMonths.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = m.replace('-', '年') + '月';
+            monthSelect.appendChild(opt);
+        });
+
+        if (currentSelected && sortedMonths.includes(currentSelected)) {
+            monthSelect.value = currentSelected;
+        } else {
+            monthSelect.value = thisMonth;
+        }
+    }
+
+    window.showHistory = function() {
+        const selectedMonth = document.getElementById('month-select').value;
+        const container = document.getElementById('history-list');
+        container.innerHTML = '';
+
+        const filteredList = Object.values(allLogs)
+            .filter(item => item && item.date && item.date.startsWith(selectedMonth))
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        if (filteredList.length === 0) {
+            container.innerHTML = '<tr><td colspan="7">この月の記録はありません。</td></tr>';
+            return;
+        }
+
+        filteredList.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.date.split('-')[2]}日</td>
+                <td><img src="${item.image}" class="history-img-thumb"></td>
+                <td>${item.mood || '-'}</td>
+                <td>${item.sleep || '-'}</td>
+                <td>${item.wake || '-'}</td>
+                <td>${item.sleepDuration || '-'}</td>
+                <td class="memo-cell">${item.memo || '-'}</td>
+            `;
+            container.appendChild(tr);
+        });
+    };
+
+    // Firebase リアルタイム同期の初期化
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('target-date').value = today;
+
+    const logsRef = ref(db, 'root_health_logs');
+    onValue(logsRef, (snapshot) => {
+        allLogs = snapshot.val() || {};
+        populateMonthSelect();
+        window.loadSelectedDateData();
+        window.showHistory();
+    });
+</script>
+
+</body>
+</html>
