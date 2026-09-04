@@ -94,6 +94,22 @@
         th { background-color: var(--bg-yellow); color: var(--text-brown); font-weight: bold; }
         .history-img-thumb { width: 50px; height: auto; border-radius: 5px; border: 1px solid #ccc; }
         .memo-cell { text-align: left; max-width: 100px; word-break: break-all; white-space: pre-wrap; }
+
+        /* ログインエリア・表示切り替え用CSS */
+        .auth-container { text-align: center; padding: 20px 10px; }
+        .login-btn {
+            width: 100%; padding: 14px; margin-top: 12px; border-radius: 30px; border: none;
+            font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .login-google { background: #4285F4; color: white; }
+        .login-twitter { background: #1DA1F2; color: white; }
+        .logout-btn {
+            background: #e0e0e0; color: var(--text-brown); border: none; padding: 6px 15px;
+            border-radius: 15px; cursor: pointer; font-size: 0.8rem; font-weight: bold;
+        }
+        .user-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -101,63 +117,79 @@
 <div class="app">
     <h1>🐹 るぅとの健康ログ 💛</h1>
 
-    <div class="card">
-        <div class="date-selector">
-            <input type="date" id="target-date" onchange="window.loadSelectedDateData()">
-        </div>
-
-        <h2>🎨 今日のらくがき</h2>
-        <div id="canvas-container">
-            <canvas id="doodle" width="400" height="200"></canvas>
-        </div>
-        <div class="canvas-btns">
-            <button onclick="window.clearCanvas()">描きなおす</button>
-        </div>
-
-        <h2>🌙 睡眠記録</h2>
-        <div class="time-group">
-            <div>
-                <span class="input-label">😴 就寝時間</span>
-                <input type="time" id="sleep-time" value="23:00">
-            </div>
-            <div>
-                <span class="input-label">☀️ 起床時間</span>
-                <input type="time" id="wake-time" value="07:00">
-            </div>
-        </div>
-
-        <h2>💬 自分で打ちこむ</h2>
-        <span class="input-label">✨ 今の気分は？</span>
-        <input type="text" id="mood" placeholder="例：最高！、ねむい...">
-
-        <span class="input-label">📝 僕へのメッセージ</span>
-        <textarea id="memo" rows="4" placeholder="今日あったことや、伝えたいことを自由に打ってくださいね。"></textarea>
-
-        <button class="save-btn" onclick="window.saveData()">💛 るぅとくんに報告する！</button>
+    <!-- ログイン画面 -->
+    <div id="auth-card" class="card auth-container">
+        <h2>ログインしてスタート</h2>
+        <p style="font-size: 0.85rem; color: #777;">SNSアカウントでログインすると、どの端末からでも同じログが同期されます。</p>
+        <button class="login-btn login-google" onclick="window.loginWithGoogle()">Googleでログイン</button>
+        <button class="login-btn login-twitter" onclick="window.loginWithTwitter()">X (Twitter)でログイン</button>
     </div>
 
-    <div class="card">
-        <h2>📊 僕との思い出（一覧表）</h2>
-        <div class="month-filter">
-            <span class="input-label" style="display:inline-block; margin-right:5px;">表示月:</span>
-            <select id="month-select" style="width: auto; display: inline-block; padding: 5px 15px;" onchange="window.showHistory()">
-            </select>
+    <!-- メインコンテンツ (ログイン前は非表示) -->
+    <div id="main-content" class="hidden">
+        <div class="card">
+            <div class="user-info">
+                <span id="user-display-name" style="font-size: 0.85rem; font-weight: bold;"></span>
+                <button class="logout-btn" onclick="window.logout()">ログアウト</button>
+            </div>
+
+            <div class="date-selector">
+                <input type="date" id="target-date" onchange="window.loadSelectedDateData()">
+            </div>
+
+            <h2>🎨 今日のらくがき</h2>
+            <div id="canvas-container">
+                <canvas id="doodle" width="400" height="200"></canvas>
+            </div>
+            <div class="canvas-btns">
+                <button onclick="window.clearCanvas()">描きなおす</button>
+            </div>
+
+            <h2>🌙 睡眠記録</h2>
+            <div class="time-group">
+                <div>
+                    <span class="input-label">😴 就寝時間</span>
+                    <input type="time" id="sleep-time" value="23:00">
+                </div>
+                <div>
+                    <span class="input-label">☀️ 起床時間</span>
+                    <input type="time" id="wake-time" value="07:00">
+                </div>
+            </div>
+
+            <h2>💬 自分で打ちこむ</h2>
+            <span class="input-label">✨ 今の気分は？</span>
+            <input type="text" id="mood" placeholder="例：最高！、ねむい...">
+
+            <span class="input-label">📝 僕へのメッセージ</span>
+            <textarea id="memo" rows="4" placeholder="今日あったことや、伝えたいことを自由に打ってくださいね。"></textarea>
+
+            <button class="save-btn" onclick="window.saveData()">💛 るぅとくんに報告する！</button>
         </div>
-        <div class="history-table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>日付</th>
-                        <th>絵</th>
-                        <th>気分</th>
-                        <th>就寝</th>
-                        <th>起床</th>
-                        <th>睡眠</th>
-                        <th>メッセージ</th>
-                    </tr>
-                </thead>
-                <tbody id="history-list"></tbody>
-            </table>
+
+        <div class="card">
+            <h2>📊 僕との思い出（一覧表）</h2>
+            <div class="month-filter">
+                <span class="input-label" style="display:inline-block; margin-right:5px;">表示月:</span>
+                <select id="month-select" style="width: auto; display: inline-block; padding: 5px 15px;" onchange="window.showHistory()">
+                </select>
+            </div>
+            <div class="history-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>日付</th>
+                            <th>絵</th>
+                            <th>気分</th>
+                            <th>就寝</th>
+                            <th>起床</th>
+                            <th>睡眠</th>
+                            <th>メッセージ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-list"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -165,19 +197,22 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
     import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-database.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, TwitterAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyBBN7W5O6qMzNv8ePrHiIOaQ1H44sJ6B00",
-  authDomain: "haru-log-a8978.firebaseapp.com",
-  projectId: "haru-log-a8978",
-  storageBucket: "haru-log-a8978.firebasestorage.app",
-  messagingSenderId: "830231215759",
-  appId: "1:830231215759:web:32746af9e8d04622c77afa",
-  measurementId: "G-YPMBD0KTNF"
+      apiKey: "AIzaSyAdKlADzvDU3jG-NvPR6Dojp9S0riz0lMk",
+      authDomain: "kirakira-mio.firebaseapp.com",
+      databaseURL: "https://kirakira-mio-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "kirakira-mio",
+      storageBucket: "kirakira-mio.firebasestorage.app",
+      messagingSenderId: "855471185848",
+      appId: "1:855471185848:web:7690881c609d35e6b8794d",
+      measurementId: "G-DPY1C2YB4F"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const auth = getAuth(app);
 
     const CANVAS = document.getElementById('doodle');
     const CTX = CANVAS.getContext('2d');
@@ -187,6 +222,48 @@
     CTX.strokeStyle = "#FFD700";
     CTX.lineWidth = 4;
     CTX.lineCap = "round";
+
+    // 認証機能の処理
+    window.loginWithGoogle = function() {
+        const provider = new GoogleAuthProvider();
+        signInWithPopup(auth, provider).catch(error => alert('Googleログインエラー: ' + error.message));
+    };
+
+    window.loginWithTwitter = function() {
+        const provider = new TwitterAuthProvider();
+        signInWithPopup(auth, provider).catch(error => alert('X (Twitter)ログインエラー: ' + error.message));
+    };
+
+    window.logout = function() {
+        signOut(auth).then(() => {
+            alert('ログアウトしました。');
+        });
+    };
+
+    // 認証状態の監視
+    onAuthStateChanged(auth, (user) => {
+        const authCard = document.getElementById('auth-card');
+        const mainContent = document.getElementById('main-content');
+        
+        if (user) {
+            authCard.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+            document.getElementById('user-display-name').textContent = '👤 ' + (user.displayName || 'ユーザー');
+
+            // ログイン中のみRealtime Databaseを監視
+            const logsRef = ref(db, 'root_health_logs');
+            onValue(logsRef, (snapshot) => {
+                allLogs = snapshot.val() || {};
+                populateMonthSelect();
+                window.loadSelectedDateData();
+                window.showHistory();
+            });
+        } else {
+            authCard.classList.remove('hidden');
+            mainContent.classList.add('hidden');
+            allLogs = {};
+        }
+    });
 
     function getPos(e) {
         const rect = CANVAS.getBoundingClientRect();
@@ -349,17 +426,8 @@
         });
     };
 
-    // Firebase リアルタイム同期の初期化
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('target-date').value = today;
-
-    const logsRef = ref(db, 'root_health_logs');
-    onValue(logsRef, (snapshot) => {
-        allLogs = snapshot.val() || {};
-        populateMonthSelect();
-        window.loadSelectedDateData();
-        window.showHistory();
-    });
 </script>
 
 </body>
